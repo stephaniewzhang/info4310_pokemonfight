@@ -2,16 +2,16 @@
 
 <head>
     <title>INFO4310 - Pokemon Fight</title>
-
+    
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script src="https://d3js.org/topojson.v2.min.js"></script>
-
+    
     <style>
         html {
             font-family: sans-serif;
         }
     </style>
-
+    
 </head>
 
 <body>
@@ -19,7 +19,124 @@
         <h1>Pokemon Fight</h1>
     </div>
     <div class="visualization">
+        <svg id = "scatterplot" height = "900" width = "900" > </svg>
+        <select id="select-y-var" style="position: absolute; top:0px; left:0px;">
+            <option value="HP" >HP</option>
+            <option value="Att">Att</option>
+            <option value="Def" selected>Def</option>
+        </select>
+        <select id="select-x-var" style="position: absolute; bottom:300px; left: 450px;">
+            <option value="HP" >HP</option>
+            <option value="Att" selected>Att</option>
+            <option value="Def">Def</option>
+        </select>
         <script>
+            let svg = d3.select("#scatterplot")
+            const margins = {top: 10, right: 10, bottom: 50, left: 50};
+            
+            const width = svg.attr("width");
+            const height = svg.attr("height");
+            
+            const plotWidth = width - margins.left - margins.right;
+            const plotHeight = height - margins.top - margins.bottom;
+            
+            const drawPlot = async () => {
+                const pokemon = await d3.json("data.json");
+                console.log(pokemon);
+
+                //original/default axis values
+                const xExtent = d3.extent(pokemon, d => d["Att"] );
+                xScale = d3.scaleLinear()
+                            .domain(xExtent)    
+                            .range([0, plotWidth]);
+                const yExtent = d3.extent(pokemon, d => d["Def"] );
+                yScale = d3.scaleLinear()
+                            .domain(yExtent)    
+                            .range([plotHeight, 0]);
+
+                let bottomAxis = d3.axisBottom(xScale);
+                svg.append('g')
+                    .attr('class', 'x axis')
+                    .attr('transform',`translate(${margins.left},${plotHeight+margins.top+10})`)
+                    .call(bottomAxis);
+
+                let leftAxis = d3.axisLeft(yScale);
+                    svg.append('g')
+                    .attr('class', 'y axis')
+                    .attr('transform',`translate(${margins.left-10},${margins.top})`)
+                    .call(leftAxis);
+                // main chart region
+                let plotArea = svg.append('g').attr('transform',`translate(${margins.left},${margins.top})`);
+                
+                // default populating the graph with circle elements
+                plotArea.selectAll(".bubble")
+                .data(pokemon)    // bind each element of the data array to one SVG circle
+                .join("circle")
+                .attr("class", "bubble")
+                .attr("cx", d => xScale(d['Att']))   
+                .attr("cy", d => yScale(d['Def']))   
+                .attr("r", 10)  
+                .style("opacity", 0.5)
+                .attr("stroke", "darkblue")
+                .attr("fill", d => "lightblue") 
+                
+                // listeners for change in x and y axis as selected by the user
+                let xVar = document.getElementById("select-x-var").value;
+                document.getElementById("select-x-var").addEventListener("change", (e)=>{
+                    
+                    // update the x-variable based on the user selection
+                    xVar = e.target.value   
+                    
+                    // rescale the x-axis
+                    const xExtent = d3.extent(pokemon, d => d[xVar] );
+                    xScale = d3.scaleLinear()
+                    .domain(xExtent)    
+                    .range([0, plotWidth]);
+                    
+                    // redraw the x-axis
+                    let bottomAxis = d3.axisBottom(xScale);
+                    svg.append('g')
+                    .attr('class', 'x axis')
+                    .attr('transform',`translate(${margins.left},${plotHeight+margins.top+10})`)
+                    .call(bottomAxis);
+                    
+                    // transition each circle element
+                
+                    svg.selectAll(".bubble")
+                    .transition()
+                    .duration(1000)
+                    .attr("cx", (d) => xScale(d[xVar]) )
+                })
+                
+                let yVar = document.getElementById("select-y-var").value;
+                document.getElementById("select-y-var").addEventListener("change", (e)=>{
+                    
+                    // update the x-variable based on the user selection
+                    yVar = e.target.value   
+                    
+                    // rescale the y-axis
+                    const yExtent = d3.extent(pokemon, d => d[yVar] );
+                    yScale = d3.scaleLinear()
+                    .domain(yExtent)    
+                    .range([plotHeight,0]);
+                    
+                    // redraw the y-axis
+                    let leftAxis = d3.axisLeft(yScale);
+                    svg.append('g')
+                    .attr('class', 'y axis')
+                    .attr('transform',`translate(${margins.left-10},${margins.top})`)
+                    .call(leftAxis);
+                    
+                    // transition each circle element
+                    plotArea.selectAll(".bubble")
+                    .transition()
+                    .duration(1000)
+                    .attr("cy", (d) => yScale(d[yVar]) )
+                })
+                
+                
+            }
+            drawPlot();
         </script>
     </div>
 </body>
