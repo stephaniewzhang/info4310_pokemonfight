@@ -20,15 +20,23 @@
     </div>
     <div class="visualization">
         <svg id = "scatterplot" height = "900" width = "900" > </svg>
-        <select id="select-y-var" style="position: absolute; top:0px; left:0px;">
-            <option value="HP" >HP</option>
-            <option value="Att">Att</option>
-            <option value="Def" selected>Def</option>
+        <select id="select-y-var" style="position: absolute; top:50px; left:10px;">
+            <option value="HP" >Hit Points</option>
+            <option value="Att">Attack</option>
+            <option value="Def" selected>Defense</option>
+            <option value="Spa">Special Attack</option>
+            <option value="Spd">Special Defense</option>
+            <option value="Spe">Speed</option>
+            <option value="Spd">Special Defense</option>
         </select>
         <select id="select-x-var" style="position: absolute; bottom:300px; left: 450px;">
-            <option value="HP" >HP</option>
-            <option value="Att" selected>Att</option>
-            <option value="Def">Def</option>
+            <option value="HP" >Hit Points</option>
+            <option value="Att" selected>Attack</option>
+            <option value="Def">Defense</option>
+            <option value="Spa">Special Attack</option>
+            <option value="Spd">Special Defense</option>
+            <option value="Spe">Speed</option>
+            <option value="Spd">Special Defense</option>
         </select>
         <script>
             let svg = d3.select("#scatterplot")
@@ -43,28 +51,34 @@
             const drawPlot = async () => {
                 const pokemon = await d3.json("data.json");
                 console.log(pokemon);
-
+                
                 //original/default axis values
                 const xExtent = d3.extent(pokemon, d => d["Att"] );
                 xScale = d3.scaleLinear()
-                            .domain(xExtent)    
-                            .range([0, plotWidth]);
+                .domain(xExtent)    
+                .range([0, plotWidth]);
+
                 const yExtent = d3.extent(pokemon, d => d["Def"] );
                 yScale = d3.scaleLinear()
-                            .domain(yExtent)    
-                            .range([plotHeight, 0]);
+                .domain(yExtent)    
+                .range([plotHeight, 0]);
+                
+                const type = d3.scaleOrdinal().domain(['Water', 'Normal', 'Grass', 'Bug', 'Psychic', 'Fire', 'Rock',
+                'Electric', 'Dark', 'Dragon', 'Fighting', 'Ghost', 'Ground', 'Poison',
+                'Ice', 'Steel', 'Fairy', 'Flying']).range(d3.schemeCategory10);
 
                 let bottomAxis = d3.axisBottom(xScale);
                 svg.append('g')
-                    .attr('class', 'x axis')
-                    .attr('transform',`translate(${margins.left},${plotHeight+margins.top+10})`)
-                    .call(bottomAxis);
-
+                .attr('class', 'x axis')
+                .attr('transform',`translate(${margins.left},${plotHeight+margins.top+10})`)
+                .call(bottomAxis);
+                
                 let leftAxis = d3.axisLeft(yScale);
-                    svg.append('g')
-                    .attr('class', 'y axis')
-                    .attr('transform',`translate(${margins.left-10},${margins.top})`)
-                    .call(leftAxis);
+                svg.append('g')
+                .attr('class', 'y axis')
+                .attr('transform',`translate(${margins.left-10},${margins.top})`)
+                .call(leftAxis);
+
                 // main chart region
                 let plotArea = svg.append('g').attr('transform',`translate(${margins.left},${margins.top})`);
                 
@@ -78,7 +92,7 @@
                 .attr("r", 10)  
                 .style("opacity", 0.5)
                 .attr("stroke", "darkblue")
-                .attr("fill", d => "lightblue") 
+                .attr("fill", d => type(d['Type 1'])) 
                 
                 // listeners for change in x and y axis as selected by the user
                 let xVar = document.getElementById("select-x-var").value;
@@ -101,7 +115,7 @@
                     .call(bottomAxis);
                     
                     // transition each circle element
-                
+                    
                     svg.selectAll(".bubble")
                     .transition()
                     .duration(1000)
@@ -133,8 +147,6 @@
                     .duration(1000)
                     .attr("cy", (d) => yScale(d[yVar]) )
                 })
-                
-                
             }
             drawPlot();
         </script>
