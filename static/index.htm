@@ -49,7 +49,7 @@
 
         .visualization {
             position: relative;
-            padding-left: 50
+            margin-left: 100;
         }
 
         .visualization select {
@@ -59,16 +59,24 @@
 
         .visualization #select-y-var {
             top: 0;
+            height: 50;
+            font-size: 20;
             left: 0;
         }
 
+        #scatterplot{
+            padding-right: 0
+        }
+
         .visualization #select-x-var {
-            bottom: 15px;
-            right: 0;
+            bottom: 200;
+            height: 50;
+            font-size: 20;
+            right: 150;
         }
 
         .visualization svg {
-            padding: 35px;
+            padding: 80px;
         }
 
         .content {
@@ -76,6 +84,25 @@
             flex-direction: row;
             align-items: center;
         }
+
+        .instructions {
+            width: 300
+        }
+
+        .instructions h3 {
+            font-size:36
+        }
+
+        .instructions p {
+            font-size:28
+        }
+
+        .instructions select {
+            width: 200;
+            height: 75;
+            font-size: 25;
+        }
+
 
         #card {
             width: 400px;
@@ -92,6 +119,8 @@
 
         #normal{
             visibility: hidden;
+            color: red;
+            font-style: italic;
         }
 
         #card h1 {
@@ -131,16 +160,26 @@
         <img src="images/pokeball.jpg" />
     </div>
     <div class="content">
-        <div class="">
+        <div class="instructions">
+            <h3>
+                Find out which Pokemon to use in battle!
+            </h3>
+            <p>
+                Filter by the target Pokemon's type, then choose the name. The remaining results are 
+                Pokemon that are strongly effective and have higher attack than the specific Pokemon you are
+                battling against. 
+            </p>
+            <p><strong>Type</strong></p>
             <select id="select-poke-type">
                 <option value="None">None</option>
             </select>
 
+            <p><strong>Name</strong></p>
             <select id="select-pokemon">
                 <option value="None">None</option>
             </select>
 
-            <p id="normal">No types are strongly affective against Normal-type Pokemon</p>
+            <p id="normal">No types are strongly effective against Normal-type Pokemon</p>
 
         </div>
 
@@ -429,7 +468,8 @@
                         .data(pokemon)
                         .each ( function(d,i) {
                             less_attack = d["Att"] < poke_object["Att"]
-                            if(less_attack){
+                            typeMismatch = !(types[typeVar].includes(d["Type 1"])) && !(types[typeVar].includes(d["Type 2"]))
+                            if(less_attack || typeMismatch){
                                 d3.select(this)
                                 .attr("fill", "#808080")
                                 .style("opacity", "0.1")
