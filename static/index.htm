@@ -64,8 +64,6 @@
         const drawPlot = async () => {
             const pokemon = await d3.json("data.json");
 
-            // TODO BUG: AXIS LABELS NEED TO ERASE WITH EACH VARIABLE CHANGE
-
             //original/default axis values
             const xExtent = d3.extent(pokemon, d => d["Att"]);
             xScale = d3.scaleLinear()
@@ -83,13 +81,13 @@
 
             let bottomAxis = d3.axisBottom(xScale);
             svg.append('g')
-                .attr('class', 'x axis')
+                .attr('id', 'xAxis')
                 .attr('transform', `translate(${margins.left},${plotHeight + margins.top + 10})`)
                 .call(bottomAxis);
 
             let leftAxis = d3.axisLeft(yScale);
             svg.append('g')
-                .attr('class', 'y axis')
+                .attr('id', 'yAxis')
                 .attr('transform', `translate(${margins.left - 10},${margins.top})`)
                 .call(leftAxis);
 
@@ -105,7 +103,7 @@
                 .attr("cx", d => xScale(d['Att']))
                 .attr("cy", d => yScale(d['Def']))
                 .attr("r", 10)
-                .attr("stroke", "darkblue")
+                .attr("stroke", d => type(d['Type 1']))
                 .attr("fill", d => type(d['Type 1']))
 
 
@@ -123,9 +121,9 @@
                     .range([0, plotWidth]);
 
                 // redraw the x-axis
+
                 let bottomAxis = d3.axisBottom(xScale);
-                svg.append('g')
-                    .attr('class', 'x axis')
+                svg.select('#xAxis')
                     .attr('transform', `translate(${margins.left},${plotHeight + margins.top + 10})`)
                     .call(bottomAxis);
 
@@ -150,9 +148,9 @@
                     .range([plotHeight, 0]);
 
                 // redraw the y-axis
+
                 let leftAxis = d3.axisLeft(yScale);
-                svg.append('g')
-                    .attr('class', 'y axis')
+                svg.select('#yAxis')
                     .attr('transform', `translate(${margins.left - 10},${margins.top})`)
                     .call(leftAxis);
 
@@ -202,6 +200,7 @@
             let type2 = d3.select("#card").append("h5");
 
             function updateCard(row) {
+                console.log(row)
                 cardHeader.text(row.Name);
                 image.attr('src', 'images/' + row.Name + "/0.jpg")
                 att.text("Attack: " + row.Att)
