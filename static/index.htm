@@ -7,28 +7,80 @@
     <script src="https://d3js.org/topojson.v2.min.js"></script>
 
     <style>
+        @font-face {
+            font-family: PokemonFont;
+            src: url("fonts/PokemonSolid.ttf");
+        }
+
+        @font-face {
+            font-family: GillSans;
+            src: url("fonts/gillsans.ttf");
+        }
+
         html {
-            font-family: sans-serif;
+            font-family: GillSans, sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .title {
             margin: 30px;
-            margin-bottom: 0;
+            margin-bottom: 75px;
             text-align: center;
+            display: flex;
         }
 
         .title h1 {
-            margin: 0;
-            margin-bottom: 5px;
+            font-family: PokemonFont;
+            font-size: 50px;
+            letter-spacing: 5px;
+            margin: 20px;
+            margin-top: 10px;
+
+        }
+
+        .title img {
+            max-height: 70px;
         }
 
         .visualization {
+            position: relative;
+        }
+
+        .visualization select {
+            position: absolute;
+            font-family: GillSans;
+        }
+
+        .visualization #select-y-var {
+            top: 0;
+            left: 0;
+        }
+
+        .visualization #select-x-var {
+            bottom: 15px;
+            right: 0;
+        }
+
+        .visualization svg {
+            padding: 35px;
+        }
+
+        .content {
             display: flex;
+            flex-direction: row;
+            align-items: center;
         }
 
         #card {
             width: 400px;
             height: 500px;
+            margin-left: 50px;
+            margin-top: 30px;
             border: 3px solid black;
             border-radius: 15px;
             display: flex;
@@ -53,7 +105,8 @@
         }
 
         #card #stats p {
-            padding: 10px;
+            font-size: 18px;
+            padding: 8px;
         }
     </style>
 
@@ -61,28 +114,32 @@
 
 <body>
     <div class="title">
-        <h1>Pokemon Fight</h1>
+        <img src="images/pokeball.jpg" />
+        <h1>PokémonFight</h1>
+        <img src="images/pokeball.jpg" />
     </div>
-    <div class="visualization">
-        <svg id="scatterplot" height="900" width="900"> </svg>
-        <select id="select-y-var" style="position: absolute; top:50px; left:10px;">
-            <option value="HP">Hit Points</option>
-            <option value="Att">Attack</option>
-            <option value="Def" selected>Defense</option>
-            <option value="Spa">Special Attack</option>
-            <option value="Spd">Special Defense</option>
-            <option value="Spe">Speed</option>
-            <option value="Spd">Special Defense</option>
-        </select>
-        <select id="select-x-var" style="position: absolute; bottom:150px; left: 900px;">
-            <option value="HP">Hit Points</option>
-            <option value="Att" selected>Attack</option>
-            <option value="Def">Defense</option>
-            <option value="Spa">Special Attack</option>
-            <option value="Spd">Special Defense</option>
-            <option value="Spe">Speed</option>
-            <option value="Spd">Special Defense</option>
-        </select>
+    <div class="content">
+        <div class="visualization">
+            <svg id="scatterplot" height="900" width="900"> </svg>
+            <select id="select-y-var">
+                <option value="HP">Hit Points</option>
+                <option value="Att">Attack</option>
+                <option value="Def" selected>Defense</option>
+                <option value="Spa">Special Attack</option>
+                <option value="Spd">Special Defense</option>
+                <option value="Spe">Speed</option>
+                <option value="Spd">Special Defense</option>
+            </select>
+            <select id="select-x-var">
+                <option value="HP">Hit Points</option>
+                <option value="Att" selected>Attack</option>
+                <option value="Def">Defense</option>
+                <option value="Spa">Special Attack</option>
+                <option value="Spd">Special Defense</option>
+                <option value="Spe">Speed</option>
+                <option value="Spd">Special Defense</option>
+            </select>
+        </div>
         <div id="card">
             <h1 id="card-title">Hover for PokeCard</h1>
             <div id="pokemon-image"></div>
@@ -231,7 +288,6 @@
 
             // Make a panel to provide more info to the user, reinforce what mouseover is doing  
             let cardHeader = d3.select("#card-title")
-            //updateCard(pokemon[237])
 
             function updateCard(row) {
                 if (row == "mouseout") {
