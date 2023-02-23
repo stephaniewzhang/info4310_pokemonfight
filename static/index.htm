@@ -152,6 +152,7 @@
                 <option value="Spd">Special Defense</option>
             </select>
         </div>
+        <div id="legend"></div>
         <div id="card">
             <h1 id="card-title">Hover for PokeCard</h1>
             <div id="pokemon-image"></div>
@@ -168,6 +169,9 @@
 
         const width = svg.attr("width");
         const height = svg.attr("height");
+        const pokemonTypes = ['Water', 'Normal', 'Grass', 'Bug', 'Psychic', 'Fire', 'Rock',
+                'Electric', 'Dark', 'Dragon', 'Fighting', 'Ghost', 'Ground', 'Poison',
+                'Ice', 'Steel', 'Fairy', 'Flying']
 
         const plotWidth = width - margins.left - margins.right;
         const plotHeight = height - margins.top - margins.bottom;
@@ -204,9 +208,7 @@
                 .domain(yExtent)
                 .range([plotHeight, 0]);
 
-            const type = d3.scaleOrdinal().domain(['Water', 'Normal', 'Grass', 'Bug', 'Psychic', 'Fire', 'Rock',
-                'Electric', 'Dark', 'Dragon', 'Fighting', 'Ghost', 'Ground', 'Poison',
-                'Ice', 'Steel', 'Fairy', 'Flying']).range(d3.schemeCategory10);
+            const type = d3.scaleOrdinal().domain(pokemonTypes).range(d3.schemeCategory10);
 
             let bottomAxis = d3.axisBottom(xScale);
             svg.append('g')
@@ -456,6 +458,29 @@
 
             // Initialization of zoom
             plotArea.call(plotZoom.transform, d3.zoomIdentity);
+
+            // Drawing legend
+            var legendSvg = d3.select("#legend")
+                              .append("svg")
+                              .attr("width", 550)
+                              .attr("height", 600);
+            const startY = 50;
+            pokemonTypes.forEach((d, i) => {
+            legendSvg.append("circle")
+                     .attr("cx", 50)
+                     .attr("cy", startY + 30 * i)
+                     .attr("r", 6)
+                     .attr("fill", type(d))
+
+            legendSvg.append("text")
+                     .text(d)
+                     .attr("font-size", "22px")
+                     .attr("fill", type(d))
+                     .attr("x", 70)
+                     .attr("y", startY + 30 * i)
+                     .attr("alignment-baseline","middle")
+            })
+        
         }
         drawPlot();
     </script>
