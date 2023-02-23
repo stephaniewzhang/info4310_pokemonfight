@@ -260,7 +260,7 @@
                     .attr("cx", (d) => xScale(d[xVar]))
 
                 // rescale the x-axis for the minimap 
-                const minimapXScale = d3.scaleLinear()
+                minimapXScale = d3.scaleLinear()
                                         .domain([xScale.invert(translateExtent[0][0]), xScale.invert(translateExtent[1][0])])
                                         .range([0, minimapWidth])
             
@@ -296,7 +296,7 @@
                     .attr("cy", (d) => yScale(d[yVar]))
 
                 // rescale the y-axis for the minimap
-                const minimapYScale = d3.scaleLinear()
+                minimapYScale = d3.scaleLinear()
                                         .domain([yScale.invert(translateExtent[1][1]), yScale.invert(translateExtent[0][1])])
                                         .range([minimapHeight, 0])
 
@@ -416,10 +416,10 @@
                                        .attr("transform", `translate(${minimapMargin.left}, ${minimapMargin.top})`)
                                        .attr("opacity", 0.5)
             
-            const minimapXScale = d3.scaleLinear()
+            let minimapXScale = d3.scaleLinear()
                                     .domain([xScale.invert(translateExtent[0][0]), xScale.invert(translateExtent[1][0])])
                                     .range([0, minimapWidth])
-            const minimapYScale = d3.scaleLinear()
+            let minimapYScale = d3.scaleLinear()
                                     .domain([yScale.invert(translateExtent[1][1]), yScale.invert(translateExtent[0][1])])
                                     .range([minimapHeight, 0])
 
