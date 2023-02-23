@@ -11,6 +11,17 @@
             font-family: sans-serif;
         }
 
+        .title {
+            margin: 30px;
+            margin-bottom: 0;
+            text-align: center;
+        }
+
+        .title h1 {
+            margin: 0;
+            margin-bottom: 5px;
+        }
+
         .visualization {
             display: flex;
         }
@@ -20,6 +31,29 @@
             height: 500px;
             border: 3px solid black;
             border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #card h1 {
+            text-align: center;
+        }
+
+        #card img {
+            max-width: 200px;
+            max-height: 200px;
+            justify-self: center;
+        }
+
+        #card #stats {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        #card #stats p {
+            padding: 10px;
         }
     </style>
 
@@ -49,7 +83,15 @@
             <option value="Spe">Speed</option>
             <option value="Spd">Special Defense</option>
         </select>
-        <div id="card"></div>
+        <div id="card">
+            <h1 id="card-title">Hover for PokeCard</h1>
+            <div id="pokemon-image"></div>
+            <div id="stats">
+                <div id="column-1"></div>
+                <div id="column-2"></div>
+            </div>
+        </div>
+    </div>
     </div>
     <script>
         let svg = d3.select("#scatterplot")
@@ -176,6 +218,7 @@
 
             });
 
+
             circles.on("mouseout", function (event, d) {
 
                 d3.select(this)
@@ -184,35 +227,44 @@
                     .attr("stroke-width", 1)
                     .style("opacity", 0.5)
 
-                updateCard({});
+                updateCard("mouseout");
 
             });
 
             // Make a panel to provide more info to the user, reinforce what mouseover is doing  
-            let cardHeader = d3.select("#card").append("h3");
-            let image = d3.select("#card").append("img")
-            let att = d3.select("#card").append("h5");
-            let def = d3.select("#card").append("h5");
-            let hp = d3.select("#card").append("h5");
-            let height = d3.select("#card").append("h5");
-            let weight = d3.select("#card").append("h5");
-            let spa = d3.select("#card").append("h5");
-            let spd = d3.select("#card").append("h5");
-            let type1 = d3.select("#card").append("h5");
-            let type2 = d3.select("#card").append("h5");
+            let cardHeader = d3.select("#card-title")
+            //updateCard(pokemon[237])
 
             function updateCard(row) {
-                cardHeader.text(row.Name);
-                image.attr('src', 'images/' + row.Name + "/0.jpg")
-                att.text("Attack: " + row.Att)
-                def.text("Defense: " + row.Def)
-                hp.text("HP: " + row.HP)
-                height.text("Height: " + row.Height)
-                weight.text("Weight: " + row.Weight)
-                spa.text("Special Attack: " + row.Spa)
-                spd.text("Special Defense: " + row.Spd)
-                type1.text("Type 1: " + row.Type1)
-                type2.text("Type 2: " + row.Type2)
+                if (row == "mouseout") {
+                    cardHeader.text("Hover for PokeCard");
+                    d3.select("#pokemon-image").select("img").remove()
+                    d3.select("#column-1").select("p").remove()
+                    d3.select("#column-1").select("p").remove()
+                    d3.select("#column-1").select("p").remove()
+                    d3.select("#column-1").select("p").remove()
+                    d3.select("#column-2").select("p").remove()
+                    d3.select("#column-2").select("p").remove()
+                    d3.select("#column-2").select("p").remove()
+                    d3.select("#column-2").select("p").remove()
+                } else {
+                    cardHeader.text(row.Name);
+                    d3.select("#pokemon-image").append("img")
+                        .attr('src', 'images/' + row.Name + '/0.jpg')
+                        .attr('onerror', "javascript:this.src='images/pokeball.jpg'")
+                    d3.select("#column-1").append("p").text("Attack: " + row.Att)
+                    d3.select("#column-1").append("p").text("Defense: " + row.Def)
+                    d3.select("#column-1").append("p").text("HP: " + row.HP)
+                    d3.select("#column-2").append("p").text("Height: " + row.Height)
+                    d3.select("#column-2").append("p").text("Weight: " + row.Weight)
+                    d3.select("#column-2").append("p").text("Special Attack: " + row.Spa)
+                    d3.select("#column-2").append("p").text("Special Defense: " + row.Spd)
+                    if (row["Type 2"]) {
+                        d3.select("#column-1").append("p").text("Type(s): " + row["Type 1"] + ", " + row["Type 2"])
+                    } else {
+                        d3.select("#column-1").append("p").text("Type(s): " + row["Type 1"])
+                    }
+                }
             }
         }
         drawPlot();
