@@ -3,23 +3,110 @@
 <head>
     <title>INFO4310 - Pokemon Fight</title>
 
-    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://d3js.org/topojson.v2.min.js"></script>
 
     <style>
+        @font-face {
+            font-family: PokemonFont;
+            src: url("fonts/PokemonSolid.ttf");
+        }
+
+        @font-face {
+            font-family: GillSans;
+            src: url("fonts/gillsans.ttf");
+        }
+
         html {
-            font-family: sans-serif;
+            font-family: GillSans, sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .title {
+            margin: 30px;
+            margin-bottom: 75px;
+            text-align: center;
+            display: flex;
+        }
+
+        .title h1 {
+            font-family: PokemonFont;
+            font-size: 50px;
+            letter-spacing: 5px;
+            margin: 20px;
+            margin-top: 10px;
+
+        }
+
+        .title img {
+            max-height: 70px;
         }
 
         .visualization {
+            position: relative;
+        }
+
+        .visualization select {
+            position: absolute;
+            font-family: GillSans;
+        }
+
+        .visualization #select-y-var {
+            top: 0;
+            left: 0;
+        }
+
+        .visualization #select-x-var {
+            bottom: 15px;
+            right: 0;
+        }
+
+        .visualization svg {
+            padding: 35px;
+        }
+
+        .content {
             display: flex;
+            flex-direction: row;
+            align-items: center;
         }
 
         #card {
             width: 400px;
             height: 500px;
+            margin-left: 50px;
+            margin-top: 30px;
             border: 3px solid black;
             border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #card h1 {
+            text-align: center;
+        }
+
+        #card img {
+            max-width: 200px;
+            max-height: 200px;
+            justify-self: center;
+        }
+
+        #card #stats {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        #card #stats p {
+            font-size: 18px;
+            padding: 8px;
         }
 
         rect.handle {
@@ -34,34 +121,46 @@
 
 <body>
     <div class="title">
-        <h1>Pokemon Fight</h1>
+        <img src="images/pokeball.jpg" />
+        <h1>PokémonFight</h1>
+        <img src="images/pokeball.jpg" />
     </div>
-    <div class="visualization">
-        <svg id="scatterplot" height="900" width="900"> 
-            <g id="plot" height="700" width="700"></g>
-            <g id="minimap" width="200" height="200" transform="translate(699,1)">
-                <rect x="0" y="0" width="200" height="200" stroke="black" stroke-width="1" fill="white" opacity="1"/>
-            </g>
-        </svg>
-        <select id="select-y-var" style="position: absolute; top:50px; left:10px;">
-            <option value="HP">Hit Points</option>
-            <option value="Att">Attack</option>
-            <option value="Def" selected>Defense</option>
-            <option value="Spa">Special Attack</option>
-            <option value="Spd">Special Defense</option>
-            <option value="Spe">Speed</option>
-            <option value="Spd">Special Defense</option>
-        </select>
-        <select id="select-x-var" style="position: absolute; bottom:150px; left: 900px;">
-            <option value="HP">Hit Points</option>
-            <option value="Att" selected>Attack</option>
-            <option value="Def">Defense</option>
-            <option value="Spa">Special Attack</option>
-            <option value="Spd">Special Defense</option>
-            <option value="Spe">Speed</option>
-            <option value="Spd">Special Defense</option>
-        </select>
-        <div id="card"></div>
+    <div class="content">
+        <div class="visualization">
+            <svg id="scatterplot" height="900" width="900"> 
+                <g id="plot" height="700" width="700"></g>
+                <g id="minimap" width="200" height="200" transform="translate(699,1)">
+                    <rect x="0" y="0" width="200" height="200" stroke="black" stroke-width="1" fill="white" opacity="1"/>
+                </g>
+            </svg>
+            <select id="select-y-var">
+                <option value="HP">Hit Points</option>
+                <option value="Att">Attack</option>
+                <option value="Def" selected>Defense</option>
+                <option value="Spa">Special Attack</option>
+                <option value="Spd">Special Defense</option>
+                <option value="Spe">Speed</option>
+                <option value="Spd">Special Defense</option>
+            </select>
+            <select id="select-x-var">
+                <option value="HP">Hit Points</option>
+                <option value="Att" selected>Attack</option>
+                <option value="Def">Defense</option>
+                <option value="Spa">Special Attack</option>
+                <option value="Spd">Special Defense</option>
+                <option value="Spe">Speed</option>
+                <option value="Spd">Special Defense</option>
+            </select>
+        </div>
+        <div id="card">
+            <h1 id="card-title">Hover for PokeCard</h1>
+            <div id="pokemon-image"></div>
+            <div id="stats">
+                <div id="column-1"></div>
+                <div id="column-2"></div>
+            </div>
+        </div>
+    </div>
     </div>
     <script>
         let svg = d3.select("#scatterplot #plot")
@@ -93,8 +192,6 @@
         const drawPlot = async () => {
             const pokemon = await d3.json("data.json");
 
-            // TODO BUG: AXIS LABELS NEED TO ERASE WITH EACH VARIABLE CHANGE
-
             //original/default axis values
             const xExtent = d3.extent(pokemon, d => d["Att"]);
             xScale = d3.scaleLinear()
@@ -112,13 +209,13 @@
 
             let bottomAxis = d3.axisBottom(xScale);
             svg.append('g')
-                .attr('class', 'x axis')
+                .attr('id', 'xAxis')
                 .attr('transform', `translate(${margins.left},${plotHeight + margins.top + 10})`)
                 .call(bottomAxis);
 
             let leftAxis = d3.axisLeft(yScale);
             svg.append('g')
-                .attr('class', 'y axis')
+                .attr('id', 'yAxis')
                 .attr('transform', `translate(${margins.left - 10},${margins.top})`)
                 .call(leftAxis);
             
@@ -131,7 +228,7 @@
                 .attr("cx", d => xScale(d['Att']))
                 .attr("cy", d => yScale(d['Def']))
                 .attr("r", 10)
-                .attr("stroke", "darkblue")
+                .attr("stroke", d => type(d['Type 1']))
                 .attr("fill", d => type(d['Type 1']))
 
 
@@ -149,9 +246,9 @@
                     .range([0, plotWidth]);
 
                 // redraw the x-axis
+
                 let bottomAxis = d3.axisBottom(xScale);
-                svg.append('g')
-                    .attr('class', 'x axis')
+                svg.select('#xAxis')
                     .attr('transform', `translate(${margins.left},${plotHeight + margins.top + 10})`)
                     .call(bottomAxis);
 
@@ -176,9 +273,9 @@
                     .range([plotHeight, 0]);
 
                 // redraw the y-axis
+
                 let leftAxis = d3.axisLeft(yScale);
-                svg.append('g')
-                    .attr('class', 'y axis')
+                svg.select('#yAxis')
                     .attr('transform', `translate(${margins.left - 10},${margins.top})`)
                     .call(leftAxis);
 
@@ -198,8 +295,7 @@
                     .attr("stroke-width", 4)
                     .style("opacity", 1)
 
-                updateCard(event);
-
+                updateCard(d);
             });
 
             circles.on("mouseout", function (event, d) {
@@ -209,74 +305,83 @@
                     .attr("stroke-width", 1)
                     .style("opacity", 0.5)
 
-                updateCard({});
+                updateCard("mouseout");
             });
 
             // Make a panel to provide more info to the user, reinforce what mouseover is doing  
-            let cardHeader = d3.select("#card").append("h3");
-            let image = d3.select("#card").append("img")
-            let att = d3.select("#card").append("h5");
-            let def = d3.select("#card").append("h5");
-            let hp = d3.select("#card").append("h5");
-            let height = d3.select("#card").append("h5");
-            let weight = d3.select("#card").append("h5");
-            let spa = d3.select("#card").append("h5");
-            let spd = d3.select("#card").append("h5");
-            let type1 = d3.select("#card").append("h5");
-            let type2 = d3.select("#card").append("h5");
+            let cardHeader = d3.select("#card-title")
 
             function updateCard(row) {
-                cardHeader.text(row.Name);
-                image.attr('src', 'images/' + row.Name + "/0.jpg")
-                att.text("Attack: " + row.Att)
-                def.text("Defense: " + row.Def)
-                hp.text("HP: " + row.HP)
-                height.text("Height: " + row.Height)
-                weight.text("Weight: " + row.Weight)
-                spa.text("Special Attack: " + row.Spa)
-                spd.text("Special Defense: " + row.Spd)
-                type1.text("Type 1: " + row.Type1)
-                type2.text("Type 2: " + row.Type2)
+                if (row == "mouseout") {
+                    cardHeader.text("Hover for PokeCard");
+                    d3.select("#pokemon-image").select("img").remove()
+                    d3.select("#column-1").select("p").remove()
+                    d3.select("#column-1").select("p").remove()
+                    d3.select("#column-1").select("p").remove()
+                    d3.select("#column-1").select("p").remove()
+                    d3.select("#column-2").select("p").remove()
+                    d3.select("#column-2").select("p").remove()
+                    d3.select("#column-2").select("p").remove()
+                    d3.select("#column-2").select("p").remove()
+                } else {
+                    cardHeader.text(row.Name);
+                    d3.select("#pokemon-image").append("img")
+                        .attr('src', 'images/' + row.Name + '/0.jpg')
+                        .attr('onerror', "javascript:this.src='images/pokeball.jpg'")
+                    d3.select("#column-1").append("p").text("Attack: " + row.Att)
+                    d3.select("#column-1").append("p").text("Defense: " + row.Def)
+                    d3.select("#column-1").append("p").text("HP: " + row.HP)
+                    d3.select("#column-2").append("p").text("Height: " + row.Height)
+                    d3.select("#column-2").append("p").text("Weight: " + row.Weight)
+                    d3.select("#column-2").append("p").text("Special Attack: " + row.Spa)
+                    d3.select("#column-2").append("p").text("Special Defense: " + row.Spd)
+                    if (row["Type 2"]) {
+                        d3.select("#column-1").append("p").text("Type(s): " + row["Type 1"] + ", " + row["Type 2"])
+                    } else {
+                        d3.select("#column-1").append("p").text("Type(s): " + row["Type 1"])
+                    }
+                }
             }
 
             // Add zoom and mini-map
 
-            const plotZoomed = (event) => {
-                console.log(event)
-                // plotArea.attr("transform", transform);
+            const plotZoomed = ({ transform }) => {
+                plotArea.attr("transform", transform);
 
-                // let transformXScale = transform.rescale(xScale);
-                // let transformYScale = transform.rescale(yScale);
+                let transformXScale = transform.rescaleX(xScale);
+                let transformYScale = transform.rescaleY(yScale);
 
-                // bottomAxis.scale(transformXScale);
-                // leftAxis.scale(transformYScale);
+                bottomAxis.scale(transformXScale);
+                leftAxis.scale(transformYScale);
 
-                // d3.select("g.y.axis").call(yAxis);
-                // d3.select("g.x.axis").call(xAxis);
+                d3.select("#yAxis").call(leftAxis);
+                d3.select("#xAxis").call(bottomAxis);
 
-                // circles.attr("r", 6 / transform.k);
+                circles.attr("r", 6 / transform.k);
 
-                // let pokemonDataBounds = [
-                //     [transformXScale.invert(0), transformYScale.invert(0)], 
-                //     [transformXScale.invert(chartWidth)], transformYScale.invert(chartHeight)
-                // ]
+                let pokemonDataBounds = [
+                    [transformXScale.invert(0), transformYScale.invert(0)], 
+                    [transformXScale.invert(plotWidth), transformYScale.invert(plotHeight)]
+                ]
 
-                // let minimapBounds = [
-                //     [minimapXScale(pokemonDataBounds[0][0]), 
-                //      minimapYScale(pokemonDataBounds[0][1])], 
-                //     [minimapXScale(pokemonDataBounds[1][0]), 
-                //      minimapYScale(pokemonDataBounds[1][1])]
-                // ]
+                let minimapBounds = [
+                    [minimapXScale(pokemonDataBounds[0][0]), 
+                     minimapYScale(pokemonDataBounds[0][1])], 
+                    [minimapXScale(pokemonDataBounds[1][0]), 
+                     minimapYScale(pokemonDataBounds[1][1])]
+                ]
 
-                // brushGroup.call(brush.move, minimapBounds)
+                brushGroup.call(brush.move, minimapBounds)
             }
             
             // Zoom handlers                 
             let zoomExtent = [[0, 0], [plotWidth, plotHeight]];
             let translateExtent = [[-100, -100], [plotWidth + 100, plotHeight + 100]];
-            let plotZoom = d3.zoom().extent(zoomExtent).translateExtent(translateExtent)
-                                    .scaleExtent([1, 10])
-                                    .on("zoom", plotZoomed)
+            var plotZoom = d3.zoom()
+                       .extent(zoomExtent)
+                       .translateExtent(translateExtent)
+                       .scaleExtent([1,10])
+                       .on("zoom", plotZoomed);                   
             plotArea.call(plotZoom);
 
             // Add mini-map 
@@ -310,11 +415,11 @@
                 if (sourceEvent === undefined) { return; }
                 
                 let transform = d3.zoomTransform(plotArea.node());
-                let transformXScale = transform.rescale(xScale);
-                let transformYScale = transform.rescale(yScale);
+                let transformXScale = transform.rescaleX(xScale);
+                let transformYScale = transform.rescaleY(yScale);
 
                 let corner = [minimapXScale.invert(selection[0][0]), 
-                              minimapYScale.invert(seelction[0][1])];
+                              minimapYScale.invert(selection[0][1])];
 
                 transform.x = -xScale(corner[0]) * transform.k;
                 transform.y = -yScale(corner[1]) * transform.k;
