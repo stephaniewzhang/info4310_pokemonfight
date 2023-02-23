@@ -49,6 +49,7 @@
 
         .visualization {
             position: relative;
+            padding-left: 50
         }
 
         .visualization select {
@@ -89,6 +90,10 @@
             justify-content: center;
         }
 
+        #normal{
+            visibility: hidden;
+        }
+
         #card h1 {
             text-align: center;
         }
@@ -119,6 +124,19 @@
         <img src="images/pokeball.jpg" />
     </div>
     <div class="content">
+        <div class="">
+            <select id="select-poke-type">
+                <option value="None">None</option>
+            </select>
+
+            <select id="select-pokemon">
+                <option value="None">None</option>
+            </select>
+
+            <p id="normal">No types are strongly affective against Normal-type Pokemon</p>
+
+        </div>
+
         <div class="visualization">
             <svg id="scatterplot" height="900" width="900"> </svg>
             <select id="select-y-var">
@@ -162,6 +180,13 @@
 
         const drawPlot = async () => {
             const pokemon = await d3.json("data.json");
+            const types = await d3.json("types_data.json");
+            
+            // Add type options to dropdown
+            let dropdown = d3.select("#select-poke-type")
+            for (const type in types) {
+                dropdown.append("option").attr("value", type).text(type);
+            }
 
             //original/default axis values
             const xExtent = d3.extent(pokemon, d => d["Att"]);
@@ -266,8 +291,8 @@
                 d3.select(this)
                     .transition().duration(200)
                     .attr("stroke", "black")
+                    .attr("stroke-opacity", 1)
                     .attr("stroke-width", 4)
-                    .style("opacity", 1)
 
                 updateCard(event);
 
@@ -280,11 +305,102 @@
                     .transition().duration(200)
                     .attr("stroke", "")
                     .attr("stroke-width", 1)
-                    .style("opacity", 0.5)
 
                 updateCard("mouseout");
 
             });
+
+            let typeSelect = document.getElementById("select-poke-type").value;
+
+            function filterType(typeVar){
+                if(typeVar === "None"){
+                    plotArea.selectAll(".bubble")
+                        .data(pokemon)
+                        .attr("stroke", d => type(d['Type 1']))
+                        .attr("fill", d => type(d['Type 1']))
+                        .style("opacity", 0.5)
+                }
+                else{
+                    plotArea.selectAll(".bubble")
+                        .data(pokemon)
+                        .each ( function(d,i) {
+                            typeMismatch = !(types[typeVar].includes(d["Type 1"])) && !(types[typeVar].includes(d["Type 2"]))
+                            if(typeMismatch){
+                                d3.select(this)
+                                .attr("fill", "#808080")
+                                .style("opacity", "0.1")
+                                .attr("stroke", "none")
+                            }
+                            else{
+                                d3.select(this)
+                                .attr("stroke", d => type(d['Type 1']))
+                                .style("opacity", "0.5")
+                                .attr("fill", d => type(d['Type 1']))
+                            }
+                        })
+                }
+            }
+
+            document.getElementById("select-poke-type").addEventListener("change", (e) => {
+                // update the type variable to current user selection
+                typeVar = e.target.value
+                document.getElementById("select-pokemon").innerHTML =
+                    null;
+
+                if(typeVar == "Normal"){
+                    document.getElementById("normal").style.visibility = 'visible'
+                } else{
+                    document.getElementById("normal").style.visibility = 'hidden'
+                }
+
+                let pokemon_dropdown = d3.select("#select-pokemon")
+                pokemon_dropdown.append("option").attr("value", "None").text("None");
+                for (const [key, value] of Object.entries(pokemon)){
+                    if(value["Type 1"] == typeVar || value["Type 2"] == typeVar){
+                        pokemon_dropdown.append("option").attr("value", value["Name"]).text(value["Name"]);
+                    }
+                }
+
+                document.getElementById("select-pokemon").addEventListener("change", (e2) => {
+                    curr_pokemon = e2.target.value
+                    var poke_object;
+                
+                    for(let [key, value] of Object.entries(pokemon)) {
+                        if(value["Name"] == curr_pokemon){
+                            poke_object = value
+                        }
+                    }
+
+                    if(curr_pokemon === "None"){
+                        plotArea.selectAll(".bubble")
+                            .data(pokemon)
+                            .attr("stroke", d => type(d['Type 1']))
+                            .attr("fill", d => type(d['Type 1']))
+                            .style("opacity", 0.5)
+                        filterType(typeVar)
+                    }
+                    else{
+                        plotArea.selectAll(".bubble")
+                        .data(pokemon)
+                        .each ( function(d,i) {
+                            less_attack = d["Att"] < poke_object["Att"]
+                            if(less_attack){
+                                d3.select(this)
+                                .attr("fill", "#808080")
+                                .style("opacity", "0.1")
+                                .attr("stroke", "none")
+                            }
+                            else{
+                                d3.select(this)
+                                .attr("stroke", d => type(d['Type 1']))
+                                .style("opacity", "0.5")
+                                .attr("fill", d => type(d['Type 1']))
+                            }
+                        })
+                    }
+                })
+                filterType(typeVar)
+            })
 
             // Make a panel to provide more info to the user, reinforce what mouseover is doing  
             let cardHeader = d3.select("#card-title")
