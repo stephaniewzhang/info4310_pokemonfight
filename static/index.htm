@@ -3,7 +3,7 @@
 <head>
     <title>INFO4310 - Pokemon Fight</title>
 
-    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://d3js.org/topojson.v2.min.js"></script>
 
     <style>
@@ -113,6 +113,13 @@
             font-size: 18px;
             padding: 8px;
         }
+
+        rect.handle {
+            display: none;
+        }
+        rect.overlay {
+            display: none;
+        }
     </style>
 
 </head>
@@ -138,7 +145,12 @@
         </div>
 
         <div class="visualization">
-            <svg id="scatterplot" height="900" width="900"> </svg>
+            <svg id="scatterplot" height="900" width="900"> 
+                <g id="plot" height="700" width="700"></g>
+                <g id="minimap" width="200" height="200" transform="translate(699,1)">
+                    <rect x="0" y="0" width="200" height="200" stroke="black" stroke-width="1" fill="white" opacity="1"/>
+                </g>
+            </svg>
             <select id="select-y-var">
                 <option value="HP">Hit Points</option>
                 <option value="Att">Attack</option>
@@ -158,6 +170,7 @@
                 <option value="Spd">Special Defense</option>
             </select>
         </div>
+        <div id="legend"></div>
         <div id="card">
             <h1 id="card-title">Hover for PokeCard</h1>
             <div id="pokemon-image"></div>
@@ -169,14 +182,35 @@
     </div>
     </div>
     <script>
-        let svg = d3.select("#scatterplot")
+        let svg = d3.select("#scatterplot #plot")
         const margins = { top: 10, right: 10, bottom: 50, left: 50 };
 
         const width = svg.attr("width");
         const height = svg.attr("height");
+        const pokemonTypes = ['Water', 'Normal', 'Grass', 'Bug', 'Psychic', 'Fire', 'Rock',
+                'Electric', 'Dark', 'Dragon', 'Fighting', 'Ghost', 'Ground', 'Poison',
+                'Ice', 'Steel', 'Fairy', 'Flying']
 
         const plotWidth = width - margins.left - margins.right;
         const plotHeight = height - margins.top - margins.bottom;
+
+        // main chart region
+        let plotArea = svg.append('g').attr('transform', `translate(${margins.left},${margins.top})`);
+        svg.append("defs").append("clipPath")
+                      .attr("id","chartClip")
+                      .append("rect")
+                      .attr("x", 0)
+                      .attr("y", 0)
+                      .attr("fill", "aquamarine")
+                      .attr("width", plotWidth)
+                      .attr("height", plotHeight);
+        plotArea.attr("clip-path","url(#chartClip)");
+
+        // Add interactive surface layer to the plot area
+        plotArea.append("rect").attr("x", 0).attr("y", 0)
+            .attr("width", plotWidth).attr("height", plotHeight)
+            .attr("fill", "none")
+            .style("pointer-events", "all")
 
         const drawPlot = async () => {
             const pokemon = await d3.json("data.json");
@@ -199,9 +233,7 @@
                 .domain(yExtent)
                 .range([plotHeight, 0]);
 
-            const type = d3.scaleOrdinal().domain(['Water', 'Normal', 'Grass', 'Bug', 'Psychic', 'Fire', 'Rock',
-                'Electric', 'Dark', 'Dragon', 'Fighting', 'Ghost', 'Ground', 'Poison',
-                'Ice', 'Steel', 'Fairy', 'Flying']).range(d3.schemeCategory10);
+            const type = d3.scaleOrdinal().domain(pokemonTypes).range(d3.schemeCategory10);
 
             let bottomAxis = d3.axisBottom(xScale);
             svg.append('g')
@@ -214,12 +246,10 @@
                 .attr('id', 'yAxis')
                 .attr('transform', `translate(${margins.left - 10},${margins.top})`)
                 .call(leftAxis);
-
-            // main chart region
-            let plotArea = svg.append('g').attr('transform', `translate(${margins.left},${margins.top})`);
-
+            
             // default populating the graph with circle elements
-            let circles = plotArea.selectAll("plot.bubble").data(pokemon)    // bind each element of the data array to one SVG circle
+            let viewport = plotArea.append("g");
+            let circles = viewport.selectAll("plot.bubble").data(pokemon)    // bind each element of the data array to one SVG circle
                 .join(enter => enter.append("circle")
                     .attr("class", "bubble")
                     .attr("opacity", 0.5)
@@ -245,18 +275,27 @@
                     .range([0, plotWidth]);
 
                 // redraw the x-axis
-
                 let bottomAxis = d3.axisBottom(xScale);
                 svg.select('#xAxis')
                     .attr('transform', `translate(${margins.left},${plotHeight + margins.top + 10})`)
                     .call(bottomAxis);
 
                 // transition each circle element
-
                 svg.selectAll(".bubble")
                     .transition()
                     .duration(1000)
                     .attr("cx", (d) => xScale(d[xVar]))
+
+                // rescale the x-axis for the minimap 
+                minimapXScale = d3.scaleLinear()
+                                        .domain([xScale.invert(translateExtent[0][0]), xScale.invert(translateExtent[1][0])])
+                                        .range([0, minimapWidth])
+            
+                // transition circles in the minimap
+                minimap.selectAll("circle.point")
+                       .transition()
+                       .duration(1000)
+                       .attr("cx", (d) =>  minimapXScale(d[xVar]))
             })
 
             let yVar = document.getElementById("select-y-var").value;
@@ -272,17 +311,27 @@
                     .range([plotHeight, 0]);
 
                 // redraw the y-axis
-
                 let leftAxis = d3.axisLeft(yScale);
                 svg.select('#yAxis')
                     .attr('transform', `translate(${margins.left - 10},${margins.top})`)
                     .call(leftAxis);
 
                 // transition each circle element
-                plotArea.selectAll(".bubble")
+                viewport.selectAll(".bubble")
                     .transition()
                     .duration(1000)
                     .attr("cy", (d) => yScale(d[yVar]))
+
+                // rescale the y-axis for the minimap
+                minimapYScale = d3.scaleLinear()
+                                        .domain([yScale.invert(translateExtent[1][1]), yScale.invert(translateExtent[0][1])])
+                                        .range([minimapHeight, 0])
+
+                // transition circles in the minimap
+                minimap.selectAll("circle.point")
+                       .transition()
+                       .duration(1000)
+                       .attr("cy", (d) =>  minimapYScale(d[yVar]))
             })
 
 
@@ -292,22 +341,18 @@
                     .transition().duration(200)
                     .attr("stroke", "black")
                     .attr("stroke-opacity", 1)
-                    .attr("stroke-width", 4)
+                    .attr("stroke-width", 5 / d3.select(this).attr("transform-k"))
 
-                updateCard(event);
-
+                updateCard(d);
             });
 
-
             circles.on("mouseout", function (event, d) {
-
                 d3.select(this)
                     .transition().duration(200)
                     .attr("stroke", "")
                     .attr("stroke-width", 1)
 
                 updateCard("mouseout");
-
             });
 
             let typeSelect = document.getElementById("select-poke-type").value;
@@ -436,6 +481,122 @@
                     }
                 }
             }
+
+            // Add zoom and mini-map
+
+            const plotZoomed = ({ transform }) => {
+                viewport.attr("transform", transform);
+
+                let transformXScale = transform.rescaleX(xScale);
+                let transformYScale = transform.rescaleY(yScale);
+
+                bottomAxis.scale(transformXScale);
+                leftAxis.scale(transformYScale);
+
+                d3.select("#yAxis").call(leftAxis);
+                d3.select("#xAxis").call(bottomAxis);
+
+                circles.attr("r", 10 / transform.k);
+                circles.attr("stroke-width", 5 / transform.k)
+                circles.attr("transform-k", transform.k);
+
+                let pokemonDataBounds = [
+                    [transformXScale.invert(0), transformYScale.invert(0)], 
+                    [transformXScale.invert(plotWidth), transformYScale.invert(plotHeight)]
+                ]
+
+                let minimapBounds = [
+                    [minimapXScale(pokemonDataBounds[0][0]), 
+                     minimapYScale(pokemonDataBounds[0][1])], 
+                    [minimapXScale(pokemonDataBounds[1][0]), 
+                     minimapYScale(pokemonDataBounds[1][1])]
+                ]
+
+                brushGroup.call(brush.move, minimapBounds)
+            }
+            
+            // Zoom handlers                 
+            let zoomExtent = [[0, 0], [plotWidth, plotHeight]];
+            let translateExtent = [[-100, -100], [plotWidth + 100, plotHeight + 100]];
+            var plotZoom = d3.zoom()
+                       .extent(zoomExtent)
+                       .translateExtent(translateExtent)
+                       .scaleExtent([1,10])
+                       .on("zoom", plotZoomed);                   
+            plotArea.call(plotZoom);
+
+            // Add mini-map 
+            const minimap =  d3.select("svg g#minimap");
+            const minimapMargin = { top: 5, right: 5, bottom: 5, left: 5 }
+            const minimapWidth = minimap.attr("width") - minimapMargin.left - minimapMargin.right;
+            const minimapHeight = minimap.attr("height") - minimapMargin.top - minimapMargin.bottom;
+            const minimapArea = minimap.append("g")
+                                       .attr("transform", `translate(${minimapMargin.left}, ${minimapMargin.top})`)
+                                       .attr("opacity", 0.5)
+            
+            let minimapXScale = d3.scaleLinear()
+                                    .domain([xScale.invert(translateExtent[0][0]), xScale.invert(translateExtent[1][0])])
+                                    .range([0, minimapWidth])
+            let minimapYScale = d3.scaleLinear()
+                                    .domain([yScale.invert(translateExtent[1][1]), yScale.invert(translateExtent[0][1])])
+                                    .range([minimapHeight, 0])
+
+            let pointsArea = minimapArea.append("g").attr("class", "points")
+            pointsArea.selectAll("circle.point").data(pokemon)
+                      .join("circle").attr("class", "point")
+                      .attr("cx", d => minimapXScale(d['Att']))
+                      .attr("cy", d => minimapYScale(d['Def']))
+                      .attr("r", 3)
+                      .attr("opacity", 0.5)
+                      .attr("stroke", "darkblue")
+                      .attr("fill", d => type(d['Type 1']))
+            
+            // Add brushes
+            const brushed = ({ sourceEvent, selection }) => {
+                if (sourceEvent === undefined) { return; }
+                
+                let transform = d3.zoomTransform(plotArea.node());
+                let transformXScale = transform.rescaleX(xScale);
+                let transformYScale = transform.rescaleY(yScale);
+
+                let corner = [minimapXScale.invert(selection[0][0]), 
+                              minimapYScale.invert(selection[0][1])];
+
+                transform.x = -xScale(corner[0]) * transform.k;
+                transform.y = -yScale(corner[1]) * transform.k;
+
+                plotArea.call(plotZoom.transform, transform);
+            }
+
+            let brushGroup = minimapArea.append("g").attr("class", "brush");
+            let brush = d3.brush().extent([[0, 0], [minimapWidth, minimapHeight]]).on("brush", brushed);
+            brushGroup.call(brush);
+
+            // Initialization of zoom
+            plotArea.call(plotZoom.transform, d3.zoomIdentity);
+
+            // Drawing legend
+            var legendSvg = d3.select("#legend")
+                              .append("svg")
+                              .attr("width", 200)
+                              .attr("height", 600);
+            const startY = 50;
+            pokemonTypes.forEach((d, i) => {
+            legendSvg.append("circle")
+                     .attr("cx", 50)
+                     .attr("cy", startY + 30 * i)
+                     .attr("r", 6)
+                     .attr("fill", type(d))
+
+            legendSvg.append("text")
+                     .text(d)
+                     .attr("font-size", "22px")
+                     .attr("fill", type(d))
+                     .attr("x", 70)
+                     .attr("y", startY + 30 * i)
+                     .attr("alignment-baseline","middle")
+            })
+        
         }
         drawPlot();
     </script>
